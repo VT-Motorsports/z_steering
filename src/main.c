@@ -38,7 +38,7 @@ struct pedalSensor {
 }
 
 
-float pedalSensorPercentage(pedalSensor pedal) const {
+float pedalPercentage(pedalSensor pedal) const {
     float percent = ((float) pedal.analogRead(pedal.inputPin) - pedal.zeroPos) / (pedal.fullPos - pedal.zeroPos);
             if (percent < 0.0f) {
                 percent = 0.0f;
@@ -99,10 +99,20 @@ const pedalSensor[] pedals = [p1, p2];
 // This would be where pedal map was defined with old apps
 //  */
 
-
-// By rules this will trip when
+// If sensors disagree by more than 10% for >100ms, fault.
+// DOUBLE CHECK RULES and if millis will work of if that needs a library
 bool pedalAgreementFault() {
-
+    static uint32_t faultTime = 0;
+    if (abs(pedalPercentage(p1) - pedalPercentage(p2)) > 0.1) { // maybe increase if p2 is being really screwy
+    if (faultTime == 0) { 
+        faultTime = millis() + 100; // time when apps should start faulting
+    } else if (faultTime <= millis()) {
+        return true;
+    }
+    } else {
+    faultTime = 0;
+  }
+  return false;
 }
 
 
