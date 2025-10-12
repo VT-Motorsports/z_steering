@@ -1,5 +1,9 @@
-#include "CanInitializer.h"
-#include "zephyr/drivers/can.h"
+#include <zephyr/device.h>
+#include <zephyr/devicetree.h>
+#include <zephyr/drivers/can.h>
+#include <zephyr/kernel.h>
+#include <zephyr/logging\log.h>
+#include <zephyr/types.h>
 
 // #define CANINITIALIZER
 /*
@@ -19,8 +23,6 @@
 // MESSAGE IDs USED IN THIS SECTION:
 #define CAN_1_STATUS_MSG_ID 0x090
 
-#define CONFIG_LOG
-
 LOG_MODULE_REGISTER(canInitializer, LOG_LEVEL_INF);
 
 inline void can_controller_state_print(const int8_t state) {
@@ -28,7 +30,7 @@ inline void can_controller_state_print(const int8_t state) {
 }
 
 uint8_t canInit() {
-  const struct device *CanController1 = DEVICE_DT_GET(DT_NODELABEL(flexcan1));
+  const struct device *CanController1 = DEVICE_DT_GET(DT_NODELABEL(fdcan1));
   if (device_is_ready(CanController1)) {
     LOG_INF("Can Controller 1 Has been Initialized");
   }
@@ -38,9 +40,7 @@ uint8_t canInit() {
   struct can_bus_err_cnt CanController1ErrorCount;
 
   struct can_frame status_frame = {
-      .dlc = can_bytes_to_dlc(8),
-      .id = CAN_1_STATUS_MSG_ID,
-  };
+      CAN_1_STATUS_MSG_ID, can_bytes_to_dlc(8), 0, {0}};
 
   LOG_INF("Calculating Timing for CAN 1: ");
   CanController1State = can_calc_timing(CanController1, CanController1Timing,
@@ -58,5 +58,7 @@ uint8_t canInit() {
   LOG_INF("Restarting CAN 1 :");
   can_start(CanController1);
   can_controller_state_print(CanController1State);
+
+  return 0;
 }
 #endif
