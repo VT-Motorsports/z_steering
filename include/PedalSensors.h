@@ -23,4 +23,4 @@ struct PedalSensor {
 
 bool pedalAgreementFault(PedalSensor p1, PedalSensor p2);
 bool brakeFault(PedalSensor p1, PedalSensor p2);
-bool checkAllFaults(PedalSensor p1, PedalSensor p2)
+bool checkAllFaults(PedalSensor p1, PedalSensor p2);

@@ -7,6 +7,9 @@
 #error "__cplusplus not defined! Build system is compiling as C!"
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 #include <stdio.h>
 #include <sys/_intsup.h>
 #include <zephyr/device.h>
@@ -14,8 +17,13 @@
 #include <zephyr/drivers/can.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/kernel.h>
-#include <zephyr/logging\log.h>
 #include <zephyr/types.h>
+#ifdef __cplusplus
+}
+#endif
+
+#include <zephyr/logging/log.h>
+LOG_MODULE_REGISTER(main);
 
 #include "CanInitializer.h"
 #include "PedalSensors.h"
@@ -39,11 +47,11 @@ const int custom_pedal_pin = A14;
 
 // Pedal sensor1 WRITE DOWN RIGHT OR LEFT WHEN WE FIGURE IT OUT also update
 // values
-const pedalSensor p1 = {0, 0, 0, 0, 0, 0};
+const PedalSensor p1 = {0, 0, 0, 0, 0, 0};
 
 // Pedal sensor2 WRITE DOWN RIGHT OR LEFT WHEN WE FIGURE IT OUT also update
 // values
-const pedalSensor p2 = {0, 0, 0, 0, 0, 0};
+const PedalSensor p2 = {0, 0, 0, 0, 0, 0};
 
 /* The devicetree node identifier for the "led0" alias. */
 
