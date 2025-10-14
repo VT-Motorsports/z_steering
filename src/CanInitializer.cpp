@@ -2,63 +2,94 @@
 #include <zephyr/devicetree.h>
 #include <zephyr/drivers/can.h>
 #include <zephyr/kernel.h>
-#include <zephyr/logging\log.h>
+#include <zephyr/logging/log.h>
 #include <zephyr/types.h>
-
-// #define CANINITIALIZER
-/*
-    CAN INITIALIZATION SEQUENCE ::::
-*/
-
-#define CANINITIALIZER
-
-// USER DEF CONFIG:
-#ifdef CANINITIALIZER
-// BAUD IN BITS PER SECOND
-#define CAN_1_BAUD 1000000
-
-// VAL/10 is percent of bit time where sampling is conducted
-#define CAN_1_SAMPLE_POINT 875
-
-// MESSAGE IDs USED IN THIS SECTION:
-#define CAN_1_STATUS_MSG_ID 0x090
 
 LOG_MODULE_REGISTER(canInitializer, LOG_LEVEL_INF);
 
-inline void can_controller_state_print(const int8_t state) {
-  LOG_INF("OP STATUS CODE: %i", state);
+namespace {
+    constexpr int CAN1_BAUD = 1000000;         
+    constexpr int CAN1_SAMPLE_POINT = 875;       
+    constexpr uint16_t CAN1_STATUS_MSG_ID = 0x090; 
 }
 
-uint8_t canInit() {
-  const struct device *CanController1 = DEVICE_DT_GET(DT_NODELABEL(fdcan1));
-  if (device_is_ready(CanController1)) {
-    LOG_INF("Can Controller 1 Has been Initialized");
-  }
-
-  struct can_timing *CanController1Timing;
-  int8_t CanController1State;
-  struct can_bus_err_cnt CanController1ErrorCount;
-
-  struct can_frame status_frame = {
-      CAN_1_STATUS_MSG_ID, can_bytes_to_dlc(8), 0, {0}};
-
-  LOG_INF("Calculating Timing for CAN 1: ");
-  CanController1State = can_calc_timing(CanController1, CanController1Timing,
-                                        CAN_1_BAUD, CAN_1_SAMPLE_POINT);
-  can_controller_state_print(CanController1State);
-
-  LOG_INF("Stopping CAN 1 to set timing: ");
-  CanController1State = can_stop(CanController1);
-  can_controller_state_print(CanController1State);
-
-  LOG_INF("Setting CAN 1 Timing: ");
-  can_set_timing(CanController1, CanController1Timing);
-  can_controller_state_print(CanController1State);
-
-  LOG_INF("Restarting CAN 1 :");
-  can_start(CanController1);
-  can_controller_state_print(CanController1State);
-
-  return 0;
+static void can_rx_callback(const struct device *dev, struct can_frame *frame, void *user_data) {
+    LOG_INF("Received CAN frame ID=0x%x DLC=%d", frame->id, frame->dlc);
 }
-#endif
+
+static void can_status_callback(const struct device *dev, int error, void *user_data) {
+    if (error) {
+        LOG_ERR("CAN Status MSG Transmit failed: %d", error);
+    } else {
+        LOG_INF("CAN Status MSG Transmit succeeded");
+    }
+}
+uint8_t can_init() {
+    const struct device *can1 = DEVICE_DT_GET(DT_NODELABEL(fdcan1));
+
+    if (!device_is_ready(can1)) {
+        LOG_ERR("CAN1 controller not ready");
+        return static_cast<uint8_t>(-1);
+    }
+
+    LOG_INF("CAN1 device ready — calculating timing...");
+    struct can_timing timing {};
+    int ret = can_calc_timing(can1, &timing, CAN1_BAUD, CAN1_SAMPLE_POINT);
+    if (ret != 0) {
+        LOG_ERR("can_calc_timing() failed with code %d", ret);
+        return static_cast<uint8_t>(ret);
+    }
+
+    struct can_bus_err_cnt can1err; 
+    enum can_state state;
+    can_get_state(can1, &state,&can1err);
+    if (state != CAN_STATE_STOPPED) {
+        can_stop(can1);
+        if (ret != 0) {
+        LOG_ERR("can_stop() failed with code %d", ret);
+        return static_cast<uint8_t>(ret);
+    }
+    }
+
+    LOG_INF("Applying timing configuration...");
+    ret = can_set_timing(can1, &timing);
+    if (ret != 0) {
+        LOG_ERR("can_set_timing() failed with code %d", ret);
+        return static_cast<uint8_t>(ret);
+    }
+
+    LOG_INF("Starting CAN1...");
+    ret = can_start(can1);
+    if (ret != 0) {
+        LOG_ERR("can_start() failed with code %d", ret);
+        return static_cast<uint8_t>(ret);
+    }
+
+    LOG_INF("Configuring default RX filter...");
+    const struct can_filter filter = {
+        .id = 0x000,
+        .mask = 0x000,
+        .flags = 0
+    };
+
+    int filter_id = can_add_rx_filter(can1, can_rx_callback, nullptr, &filter);
+    if (filter_id < 0) {
+        LOG_ERR("Failed to add RX filter: %d", filter_id);
+    } else {
+        LOG_INF("RX filter installed successfully (id=%d)", filter_id);
+    }
+
+    struct can_frame msg_can1_status{
+        .id = CAN1_STATUS_MSG_ID, 
+        .dlc = can_bytes_to_dlc(8), 
+        .flags = 0, 
+        .data = {0,1,2,3,4,5,6,7}
+    }; 
+    
+    can_send(can1,&msg_can1_status,K_MSEC(10),can_status_callback,nullptr); 
+
+    LOG_INF("CAN1 initialization complete.");
+    return 0;
+
+
+}

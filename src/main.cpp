@@ -26,7 +26,7 @@ extern "C" {
 LOG_MODULE_REGISTER(main);
 
 #include "CanInitializer.h"
-#include "PedalSensors.h"
+// #include "PedalSensors.h"
 
 /* 1000 msec = 1 sec */
 #define SLEEP_TIME_MS 1000
@@ -34,24 +34,24 @@ LOG_MODULE_REGISTER(main);
 #define DEBUGGING 0
 
 // Placeholder values while we do not have real numbers (most likely same as 24
-// car)
-const int ocThreshold = 1; // Open Circuit threshold
-const int scThreshold = 2; // Short Circuit threshold
+// // car)
+// const int ocThreshold = 1; // Open Circuit threshold
+// const int scThreshold = 2; // Short Circuit threshold
 
-// Pin Configuration NOT REAL VALUES
-const int brake_switch_pin = 14;
-const int brake_out_pin = 2;
-const int error_out_pin = 9;
-const int rtds_horn_pin = 21;
-const int custom_pedal_pin = A14;
+// // Pin Configuration NOT REAL VALUES
+// const int brake_switch_pin = 14;
+// const int brake_out_pin = 2;
+// const int error_out_pin = 9;
+// const int rtds_horn_pin = 21;
+// const int custom_pedal_pin = A14;
 
-// Pedal sensor1 WRITE DOWN RIGHT OR LEFT WHEN WE FIGURE IT OUT also update
-// values
-const PedalSensor p1 = {0, 0, 0, 0, 0, 0};
+// // Pedal sensor1 WRITE DOWN RIGHT OR LEFT WHEN WE FIGURE IT OUT also update
+// // values
+// const PedalSensor p1 = {0, 0, 0, 0, 0, 0};
 
-// Pedal sensor2 WRITE DOWN RIGHT OR LEFT WHEN WE FIGURE IT OUT also update
-// values
-const PedalSensor p2 = {0, 0, 0, 0, 0, 0};
+// // Pedal sensor2 WRITE DOWN RIGHT OR LEFT WHEN WE FIGURE IT OUT also update
+// // values
+// const PedalSensor p2 = {0, 0, 0, 0, 0, 0};
 
 /* The devicetree node identifier for the "led0" alias. */
 
@@ -60,4 +60,8 @@ const PedalSensor p2 = {0, 0, 0, 0, 0, 0};
  * See the sample documentation for information on how to fix this.
  */
 
-int main(void) {}
+int main(void) {
+
+    LOG_INF("ENTERED MAIN"); 
+    can_init();
+}
