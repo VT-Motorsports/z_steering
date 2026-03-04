@@ -111,11 +111,13 @@ int CanBus::register_handlers()
 
         LOG_INF("Registered 32 DTI decoder handlers on CAN1");
     }
+#if DT_NODE_HAS_STATUS(DT_NODELABEL(fdcan2), okay)
     else if (dev_ == DEVICE_DT_GET(DT_NODELABEL(fdcan2)))
     {
         // CAN2 handlers go here (BMS, dashboard, etc.)
         LOG_INF("CAN2 handler registration — no handlers yet");
     }
+#endif
     else
     {
         LOG_ERR("Unknown CAN device during handler registration");
@@ -189,10 +191,12 @@ int CanBus::init(const struct device *dev, uint32_t bitrate, uint32_t sample_poi
     {
         callback = can1_rx_isr;
     }
+#if DT_NODE_HAS_STATUS(DT_NODELABEL(fdcan2), okay)
     else if (dev_ == DEVICE_DT_GET(DT_NODELABEL(fdcan2)))
     {
         callback = can2_rx_isr;
     }
+#endif
     else
     {
         LOG_ERR("Unknown CAN device during callback assignment");

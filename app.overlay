@@ -1,0 +1,92 @@
+/*
+ * Steering Wheel Controller Hardware Mapping
+ * Target: STM32H753VIT6
+ */
+
+/ {
+	aliases {
+		led-status = &led_status;
+		led-error = &led_error;
+		
+		/* Tactile Buttons */
+		btn-1 = &btn_1;
+		btn-2 = &btn_2;
+		btn-4 = &btn_4;
+		btn-5 = &btn_5;
+		btn-6 = &btn_6;
+
+		/* Toggle Switch */
+		sw-toggle = &sw_toggle;
+
+		/* 4-Bit Multiposition Switch */
+		sw-bit1 = &sw_bit1;
+		sw-bit2 = &sw_bit2;
+		sw-bit4 = &sw_bit4;
+		sw-bit8 = &sw_bit8;
+
+		/* Rotary Encoder 1 */
+		enc1-left = &enc1_left;
+		enc1-right = &enc1_right;
+		enc1-push = &enc1_push;
+
+		/* Rotary Encoder 2 */
+		enc2-left = &enc2_left;
+		enc2-right = &enc2_right;
+		enc2-push = &enc2_push;
+	};
+
+	leds {
+		compatible = "gpio-leds";
+		led_status: led_status {
+			gpios = <&gpiob 14 GPIO_ACTIVE_HIGH>;
+			label = "Status LED";
+		};
+		led_error: led_error {
+			gpios = <&gpiob 13 GPIO_ACTIVE_HIGH>;
+			label = "Error LED";
+		};
+	};
+
+	gpio_keys {
+		compatible = "gpio-keys";
+		
+		/* Tactile Buttons (Active Low) */
+		btn_1: btn_1 { gpios = <&gpioe 6 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>; label = "BTN_1"; };
+		btn_2: btn_2 { gpios = <&gpioe 3 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>; label = "BTN_2"; };
+		btn_4: btn_4 { gpios = <&gpiob 15 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>; label = "BTN_4"; };
+		btn_5: btn_5 { gpios = <&gpioe 4 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>; label = "BTN_5"; };
+		btn_6: btn_6 { gpios = <&gpiod 6 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>; label = "BTN_6"; };
+
+		/* Toggle Switch */
+		sw_toggle: sw_toggle { gpios = <&gpioe 7 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>; label = "Toggle Switch"; };
+
+		/* 4-Bit Multiposition Switch */
+		sw_bit1: sw_bit1 { gpios = <&gpioc 5 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>; label = "Switch Bit 1"; };
+		sw_bit2: sw_bit2 { gpios = <&gpiob 1 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>; label = "Switch Bit 2"; };
+		sw_bit4: sw_bit4 { gpios = <&gpiob 2 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>; label = "Switch Bit 4"; };
+		sw_bit8: sw_bit8 { gpios = <&gpiob 0 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>; label = "Switch Bit 8"; };
+
+		/* Rotary Encoder 1 (E33-VT6C2-M03T) */
+		enc1_left: enc1_left   { gpios = <&gpioa 1 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>; label = "Enc1 Left"; };
+		enc1_right: enc1_right { gpios = <&gpioa 2 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>; label = "Enc1 Right"; };
+		enc1_push: enc1_push   { gpios = <&gpiob 12 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>; label = "Enc1 Push"; };
+
+		/* Rotary Encoder 2 (E33-VT6C2-M03T) */
+		enc2_left: enc2_left   { gpios = <&gpioa 5 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>; label = "Enc2 Left"; };
+		enc2_right: enc2_right { gpios = <&gpioa 4 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>; label = "Enc2 Right"; };
+		enc2_push: enc2_push   { gpios = <&gpioc 10 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>; label = "Enc2 Push"; };
+	};
+};
+
+/* Debug Console Configuration */
+&usart3 {
+	pinctrl-0 = <&usart3_tx_pd8 &usart3_rx_pd9>;
+	pinctrl-names = "default";
+	current-speed = <115200>;
+	status = "okay";
+};
+
+/* Ensure FDCAN1 is enabled */
+&fdcan1 {
+	status = "okay";
+};

@@ -1,0 +1,21 @@
+/*
+ * Copyright (c) 2024
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+&fdcan2 {
+	pinctrl-0 = <&fdcan2_rx_pb5 &fdcan2_tx_pb6>;
+	pinctrl-names = "default";
+	status = "okay";
+};
+
+&pinctrl {
+	fdcan2_rx_pb5: fdcan2_rx_pb5 {
+		pinmux = <STM32_PINMUX('B', 5, AF9)>;
+	};
+
+	fdcan2_tx_pb6: fdcan2_tx_pb6 {
+		pinmux = <STM32_PINMUX('B', 6, AF9)>;
+	};
+};
