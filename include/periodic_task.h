@@ -1,9 +1,9 @@
 #pragma once
 
-#include "vehicle_state.h"
+#include "steering_state.h"
 #include <zephyr/kernel.h>
 
-// CRTP base for all periodic VCU tasks.
+// CRTP base for all periodic Wheel tasks.
 //
 // Usage:
 //   class MyTask : public PeriodicTask<MyTask> {
@@ -19,7 +19,7 @@
 //
 //   // In main() after hardware init:
 //   my_task.start(my_stack, K_THREAD_STACK_SIZEOF(my_stack),
-//                 /*period_ms=*/1, /*priority=*/-5, &vehicle);
+//                 /*period_ms=*/1, /*priority=*/-5, &wheel);
 //
 // Timing: each thread sleeps to an absolute wake target incremented by period_ms
 // every iteration — k_sleep(K_TIMEOUT_ABS_MS(next_wake)). Execution time of run()
@@ -42,9 +42,9 @@ template <typename Derived> class PeriodicTask
     //   priority           : Zephyr thread priority.
     //                        Negative = cooperative (non-preemptible by other threads).
     //                        Positive = preemptible.
-    //   vehicle            : shared vehicle state, accessible via vehicle() in derived.
+    //   wheel              : shared wheel state, accessible via wheel() in derived.
     //   flags              : k_thread_create flags, e.g. K_FP_REGS for FP-using tasks.
-    void start(k_thread_stack_t *stack, size_t stack_size, uint32_t period_ms, int priority, VehicleState *vehicle,
+    void start(k_thread_stack_t *stack, size_t stack_size, uint32_t period_ms, int priority, WheelState *wheel,
                uint32_t flags = 0);
 
     // Change the task period at runtime. Takes effect on the next loop iteration.
@@ -71,9 +71,9 @@ template <typename Derived> class PeriodicTask
     }
 
   protected:
-    VehicleState *vehicle()
+    WheelState *wheel()
     {
-        return vehicle_;
+        return wheel_;
     }
 
     // Default no-op hooks. Derived classes shadow these to override.
@@ -87,7 +87,7 @@ template <typename Derived> class PeriodicTask
   private:
     struct k_thread thread_;
     volatile uint32_t period_ms_ = 0;
-    VehicleState *vehicle_ = nullptr;
+    WheelState *wheel_ = nullptr;
     volatile bool running_ = false;
     uint32_t deadline_misses_ = 0;
     uint32_t total_runs_ = 0;
@@ -99,10 +99,10 @@ template <typename Derived> class PeriodicTask
 
 template <typename Derived>
 void PeriodicTask<Derived>::start(k_thread_stack_t *stack, size_t stack_size, uint32_t period_ms, int priority,
-                                  VehicleState *vehicle, uint32_t flags)
+                                  WheelState *wheel, uint32_t flags)
 {
     period_ms_ = period_ms;
-    vehicle_ = vehicle;
+    wheel_ = wheel;
     running_ = true;
     k_thread_create(&thread_, stack, stack_size, entry, this, nullptr, nullptr, priority, flags, K_NO_WAIT);
 }

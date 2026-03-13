@@ -1,0 +1,9 @@
+# Copyright (c) 2025 Wheel Team
+# SPDX-License-Identifier: Apache-2.0
+
+if BOARD_WHEEL_STM32
+
+config BOARD
+	default "wheel_stm32"
+
+endif # BOARD_WHEEL_STM32

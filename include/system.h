@@ -2,6 +2,7 @@
 
 #include "hardware.h"
 #include "periodic_task.h"
+#include "steering_state.h" // Ensures the new state object is defined
 #include <zephyr/debug/cpu_load.h>
 #include <zephyr/kernel.h>
 #include <zephyr/sys/mem_stats.h>
@@ -43,7 +44,7 @@ private:
 };
 
 // Start the diagnostics task. Stack and instance are owned inside system.cpp.
-void start_diagnostics_task(System *sys, Hardware *hw, VehicleState *v,
+void start_diagnostics_task(System *sys, Hardware *hw, WheelState *w,
                              uint32_t period_ms = 1000, int priority = 10);
 
 DiagnosticsTask &get_diagnostics_task();

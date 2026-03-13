@@ -13,13 +13,14 @@ DiagnosticsTask &get_diagnostics_task()
     return diagnostics_task_instance;
 }
 
-void start_diagnostics_task(System *sys, Hardware *hw, VehicleState *v,
+// Updated to use WheelState instead of VehicleState
+void start_diagnostics_task(System *sys, Hardware *hw, WheelState *w,
                              uint32_t period_ms, int priority)
 {
     diagnostics_task_instance.set_system(sys);
     diagnostics_task_instance.set_hardware(hw);
     diagnostics_task_instance.start(diag_stack, K_THREAD_STACK_SIZEOF(diag_stack),
-                                    period_ms, priority, v);
+                                    period_ms, priority, w);
     LOG_INF("Diagnostics task started (%u ms period)", period_ms);
 }
 
@@ -83,12 +84,14 @@ void DiagnosticsTask::run()
 
     uint8_t cpu_load = system_->get_cpu_load();
 
+    // CPU load is usually returned in 1/10th of a percent by Zephyr's cpu_load_get
     LOG_INF("Uptime: %llu ms | Heap: %zu/%zu bytes | CPU: %d.%d%%",
             uptime_ms,
             mem_stats.allocated_bytes,
             mem_stats.allocated_bytes + mem_stats.free_bytes,
             cpu_load / 10, cpu_load % 10);
 
+    // Monitor FDCAN1 State
     if (hardware_ && hardware_->can1.is_initialized())
     {
         enum can_state state;
@@ -96,29 +99,12 @@ void DiagnosticsTask::run()
         {
             switch (state)
             {
-            case CAN_STATE_ERROR_ACTIVE:  LOG_INF("CAN1: Active");        break;
-            case CAN_STATE_ERROR_WARNING: LOG_WRN("CAN1: Warning");       break;
-            case CAN_STATE_ERROR_PASSIVE: LOG_WRN("CAN1: Error Passive"); break;
-            case CAN_STATE_BUS_OFF:       LOG_ERR("CAN1: Bus Off");       break;
-            case CAN_STATE_STOPPED:       LOG_INF("CAN1: Stopped");       break;
+            case CAN_STATE_ERROR_ACTIVE:  LOG_INF("CAN1: Active");         break;
+            case CAN_STATE_ERROR_WARNING: LOG_WRN("CAN1: Warning");        break;
+            case CAN_STATE_ERROR_PASSIVE: LOG_WRN("CAN1: Error Passive");  break;
+            case CAN_STATE_BUS_OFF:       LOG_ERR("CAN1: Bus Off");        break;
+            case CAN_STATE_STOPPED:       LOG_INF("CAN1: Stopped");        break;
             default:                      LOG_ERR("CAN1: Unknown state");  break;
-            }
-        }
-    }
-
-    if (hardware_ && hardware_->can2.is_initialized())
-    {
-        enum can_state state;
-        if (hardware_->can2.get_state(&state) == 0)
-        {
-            switch (state)
-            {
-            case CAN_STATE_ERROR_ACTIVE:  LOG_INF("CAN2: Active");        break;
-            case CAN_STATE_ERROR_WARNING: LOG_WRN("CAN2: Warning");       break;
-            case CAN_STATE_ERROR_PASSIVE: LOG_WRN("CAN2: Error Passive"); break;
-            case CAN_STATE_BUS_OFF:       LOG_ERR("CAN2: Bus Off");       break;
-            case CAN_STATE_STOPPED:       LOG_INF("CAN2: Stopped");       break;
-            default:                      LOG_ERR("CAN2: Unknown state");  break;
             }
         }
     }

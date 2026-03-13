@@ -1,7 +1,6 @@
 // hardware.cpp
 #include "hardware.h"
-#include "adc.h"
-#include "vehicle_state.h"
+#include "steering_state.h"
 #include "zephyr/drivers/can.h"
 #include <cstdint>
 #include <zephyr/device.h>
@@ -11,189 +10,86 @@ LOG_MODULE_REGISTER(hardware);
 
 int Hardware::init()
 {
-    LOG_INF("Initializing hardware...");
+    LOG_INF("Initializing Wheel hardware...");
 
-    if (initializeADCs() != 0)
+    
+    if (initializeGPIOs() != 0)
     {
-        LOG_ERR("Failed to initialize ADCs");
+        LOG_ERR("Failed to initialize Wheel GPIOs");
         return -1;
     }
 
-    if (initializeGPIOs() != 0)
+    if (initializeCAN() != 0) 
     {
-        LOG_ERR("Failed to initialize GPIOs");
+        LOG_ERR("Failed to initialize CAN");
         return -2;
     }
 
-    if (initializeCANs() != 0)
-    {
-        LOG_ERR("Failed to initialize CANs");
-        return -3;
-    }
-
-    LOG_INF("Hardware initialized successfully");
+    LOG_INF("Wheel Hardware initialized successfully");
     return 0;
 }
 
-Hardware::Hardware(VehicleState *state) : can1(state), can2(state), vehicle(state)
+Hardware::Hardware(WheelState *state) : can1(state), wheel(state)
 {
-}
-
-int Hardware::initializeADCs()
-{
-    LOG_INF("Initializing hardware...");
-
-    // Get ADC device
-    adc_dev_ = DEVICE_DT_GET(DT_NODELABEL(adc1));
-    if (!device_is_ready(adc_dev_))
-    {
-        LOG_ERR("ADC device adc1 not ready");
-        return -1;
-    }
-
-    /*
-     * Devicetree -> physical pin mapping (from your DTS + pinout):
-     *  chan0: PA0  -> ADC1_INP16 (reg = 16)
-     *  chan1: PA1  -> ADC1_INP17 (reg = 17)
-     *  chan2: PA2  -> ADC1_INP14 (reg = 14)
-     *  chan3: PA3  -> ADC1_INP15 (reg = 15)
-     *  chan4: PA4  -> ADC1_INP18 (reg = 18)
-     *  chan5: PA5  -> ADC1_INP19 (reg = 19)
-     *  chan6: PA6  -> ADC1_INP3  (reg = 3)
-     *  chan7: PA7  -> ADC1_INP7  (reg = 7)
-     *
-     * Note: these values must match the DTS channel@N { reg = <...>; } entries,
-     * not "channel@N" indices.
-     */
-
-    if (adc_chan0.init(adc_dev_, 16) != 0)
-    {
-        LOG_ERR("Failed to init adc_chan0 (PA0/INP16)");
-        return -10;
-    }
-    if (adc_chan1.init(adc_dev_, 17) != 0)
-    {
-        LOG_ERR("Failed to init adc_chan1 (PA1/INP17)");
-        return -11;
-    }
-    if (adc_chan2.init(adc_dev_, 14) != 0)
-    {
-        LOG_ERR("Failed to init adc_chan2 (PA2/INP14)");
-        return -12;
-    }
-    if (adc_chan3.init(adc_dev_, 15) != 0)
-    {
-        LOG_ERR("Failed to init adc_chan3 (PA3/INP15)");
-        return -13;
-    }
-    if (adc_chan4.init(adc_dev_, 18) != 0)
-    {
-        LOG_ERR("Failed to init adc_chan4 (PA4/INP18)");
-        return -14;
-    }
-    if (adc_chan5.init(adc_dev_, 19) != 0)
-    {
-        LOG_ERR("Failed to init adc_chan5 (PA5/INP19)");
-        return -15;
-    }
-    if (adc_chan6.init(adc_dev_, 3) != 0)
-    {
-        LOG_ERR("Failed to init adc_chan6 (PA6/INP3)");
-        return -16;
-    }
-    if (adc_chan7.init(adc_dev_, 7) != 0)
-    {
-        LOG_ERR("Failed to init adc_chan7 (PA7/INP7)");
-        return -17;
-    }
-
-    LOG_INF("Hardware initialized successfully");
-    return 0;
-}
-
-uint16_t Hardware::getADCValue(uint8_t channel)
-{
-    static AdcChannel *const adc_table[8] = {&adc_chan0, &adc_chan1, &adc_chan2, &adc_chan3,
-                                             &adc_chan4, &adc_chan5, &adc_chan6, &adc_chan7};
-
-    if (channel >= 8)
-    {
-        return -1;
-    }
-
-    return adc_table[channel]->read_raw();
 }
 
 int Hardware::initializeGPIOs()
 {
-    // Get GPIO ports
-    gpioe_ = DEVICE_DT_GET(DT_NODELABEL(gpioe));
-    gpioc_ = DEVICE_DT_GET(DT_NODELABEL(gpioc));
+    // Get GPIO ports from Devicetree
     gpioa_ = DEVICE_DT_GET(DT_NODELABEL(gpioa));
+    gpiob_ = DEVICE_DT_GET(DT_NODELABEL(gpiob));
+    gpioc_ = DEVICE_DT_GET(DT_NODELABEL(gpioc));
+    gpiod_ = DEVICE_DT_GET(DT_NODELABEL(gpiod));
+    gpioe_ = DEVICE_DT_GET(DT_NODELABEL(gpioe));
 
-    if (!gpioe_ || !gpioc_ || !gpioa_)
+    if (!gpioa_ || !gpiob_ || !gpioc_ || !gpiod_ || !gpioe_)
     {
-        LOG_ERR("Failed to get GPIO ports");
+        LOG_ERR("Failed to get one or more GPIO ports");
         return -1;
     }
 
-    // Initialize LEDs (PE2-PE6)
-    if (led_yellow.init(gpioe_, 2, GPIO_OUTPUT_INACTIVE) != 0)
-    {
-        LOG_ERR("Failed to init led_yellow");
-        return -10;
-    }
-    if (led_orange.init(gpioe_, 3, GPIO_OUTPUT_INACTIVE) != 0)
-    {
-        LOG_ERR("Failed to init led_orange");
-        return -11;
-    }
-    if (led_red.init(gpioe_, 4, GPIO_OUTPUT_INACTIVE) != 0)
-    {
-        LOG_ERR("Failed to init led_red");
-        return -12;
-    }
-    if (led_blue.init(gpioe_, 5, GPIO_OUTPUT_INACTIVE) != 0)
-    {
-        LOG_ERR("Failed to init led_blue");
-        return -13;
-    }
-    if (led_green.init(gpioe_, 6, GPIO_OUTPUT_INACTIVE) != 0)
-    {
-        LOG_ERR("Failed to init led_green");
-        return -14;
-    }
+    // --- 5 Pushbuttons ---
+    btn_1.init(gpioe_, 6, GPIO_INPUT | GPIO_PULL_UP);
+    btn_2.init(gpioe_, 3, GPIO_INPUT | GPIO_PULL_UP);
+    btn_4.init(gpiob_, 15, GPIO_INPUT | GPIO_PULL_UP);
+    btn_5.init(gpioe_, 4, GPIO_INPUT | GPIO_PULL_UP);
+    btn_6.init(gpiod_, 6, GPIO_INPUT | GPIO_PULL_UP);
 
-    // Initialize control signals
-    if (horn_signal.init(gpioc_, 8, GPIO_OUTPUT_INACTIVE) != 0)
-    {
-        LOG_ERR("Failed to init horn_signal");
-        return -20;
-    }
-    if (drive_enable.init(gpioc_, 9, GPIO_OUTPUT_INACTIVE) != 0)
-    {
-        LOG_ERR("Failed to init drive_enable");
-        return -21;
-    }
-    if (air_ctrl.init(gpioa_, 8, GPIO_OUTPUT_INACTIVE) != 0)
-    {
-        LOG_ERR("Failed to init air_ctrl");
-        return -22;
-    }
+    // --- Toggle Switch (Flick Up) ---
+    toggle_up.init(gpioe_, 7, GPIO_INPUT | GPIO_PULL_UP);
 
-    LOG_INF("GPIOs initialized");
+    // --- Rotary Encoder Pushbuttons ---
+    bottom_rotary_btn.init(gpiob_, 12, GPIO_INPUT | GPIO_PULL_UP);
+    top_rotary_btn.init(gpioc_, 10, GPIO_INPUT | GPIO_PULL_UP);
+
+    // --- Rotary Encoder Channels (Read as Digital Inputs) ---
+    bottom_enc_a.init(gpioa_, 1, GPIO_INPUT | GPIO_PULL_UP);
+    bottom_enc_b.init(gpioa_, 2, GPIO_INPUT | GPIO_PULL_UP);
+    top_enc_a.init(gpioa_, 5, GPIO_INPUT | GPIO_PULL_UP);
+    top_enc_b.init(gpioa_, 4, GPIO_INPUT | GPIO_PULL_UP);
+
+    // --- Multiposition Switch (BCD Bits) ---
+    multi_bit1.init(gpioc_, 5, GPIO_INPUT | GPIO_PULL_UP);
+    multi_bit2.init(gpiob_, 1, GPIO_INPUT | GPIO_PULL_UP);
+    multi_bit4.init(gpiob_, 2, GPIO_INPUT | GPIO_PULL_UP);
+    multi_bit8.init(gpiob_, 0, GPIO_INPUT | GPIO_PULL_UP);
+
+    // --- Status LEDs ---
+    mcu_err_led.init(gpiob_, 13, GPIO_OUTPUT_INACTIVE);
+    mcu_stat_led.init(gpiob_, 14, GPIO_OUTPUT_INACTIVE);
+
+    LOG_INF("All Wheel GPIOs (16 inputs, 2 outputs) initialized");
     return 0;
 }
 
-int Hardware::initializeCANs()
+int Hardware::initializeCAN()
 {
-    // Get CAN devices
+    // Get FDCAN1 device
     can1_dev = DEVICE_DT_GET(DT_NODELABEL(fdcan1));
-    can2_dev = DEVICE_DT_GET(DT_NODELABEL(fdcan2));
 
-    if (!can1_dev || !can2_dev)
+    if (!can1_dev)
     {
-        LOG_ERR("Failed to get CAN devices");
+        LOG_ERR("Failed to get FDCAN1 device");
         return -1;
     }
 
@@ -210,21 +106,6 @@ int Hardware::initializeCANs()
         return -11;
     }
 
-    // Initialize CAN2 (1 Mbps)
-    if (can2.init(can2_dev, 1000000, 875) != 0)
-    {
-        LOG_ERR("Failed to init CAN2");
-        return -20;
-    }
-
-    if (can2.start() != 0)
-    {
-        LOG_ERR("Failed to start CAN2");
-        return -21;
-    }
-
-    can1.set_mode(CAN_MODE_LOOPBACK);
-
-    LOG_INF("CANs initialized");
+    LOG_INF("FDCAN1 initialized and started at 1Mbps");
     return 0;
 }

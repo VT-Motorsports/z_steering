@@ -1,5 +1,5 @@
-# Copyright (c) 2025 VCU Team
+# Copyright (c) 2025 Wheel Team
 # SPDX-License-Identifier: Apache-2.0
 
-config BOARD_VCU_STM32
+config BOARD_WHEEL_STM32
 	select SOC_STM32H753XX

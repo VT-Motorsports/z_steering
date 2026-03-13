@@ -1,55 +1,66 @@
 // hardware.h
 #pragma once
 
-#include "adc.h"
 #include "can.h"
 #include "gpio.h"
-#include "vehicle_state.h"
+#include "steering_state.h"
 #include <zephyr/device.h>
 #include <zephyr/devicetree.h>
-#include <zephyr/drivers/adc.h>
 
 class Hardware
 {
   public:
-    Hardware(VehicleState *state);
-    // ADC Channels (8 total) - referenced as chan0..chan7
-    AdcChannel adc_chan0; // PA0  -> ADC1_INP16
-    AdcChannel adc_chan1; // PA1  -> ADC1_INP17
-    AdcChannel adc_chan2; // PA2  -> ADC1_INP14
-    AdcChannel adc_chan3; // PA3  -> ADC1_INP15
-    AdcChannel adc_chan4; // PA4  -> ADC1_INP18
-    AdcChannel adc_chan5; // PA5  -> ADC1_INP19
-    AdcChannel adc_chan6; // PA6  -> ADC1_INP3
-    AdcChannel adc_chan7; // PA7  -> ADC1_INP7
+    Hardware(WheelState *state);
 
-    // Error LEDs (PE2-PE6)
-    GpioPin led_yellow; // PE2 - led0
-    GpioPin led_orange; // PE3 - led1
-    GpioPin led_red;    // PE4 - led2
-    GpioPin led_blue;   // PE5 - led3
-    GpioPin led_green;  // PE6 - led4
+    // 5 Pushbuttons
+    GpioPin btn_1;
+    GpioPin btn_2;
+    GpioPin btn_4;
+    GpioPin btn_5;
+    GpioPin btn_6;
 
-    // Control signals
-    GpioPin horn_signal;  // PC8
-    GpioPin drive_enable; // PC9
-    GpioPin air_ctrl;     // PA8
+    // Toggle Switch
+    GpioPin toggle_up;
 
+    // Rotary Encoder Pushbuttons
+    GpioPin bottom_rotary_btn;
+    GpioPin top_rotary_btn;
+
+    // Rotary Encoder A/B Channels (Digital Inputs)
+    GpioPin bottom_enc_a;
+    GpioPin bottom_enc_b;
+    GpioPin top_enc_a;
+    GpioPin top_enc_b;
+
+    // Multiposition Switch Bits (4-bit BCD)
+    GpioPin multi_bit1;
+    GpioPin multi_bit2;
+    GpioPin multi_bit4;
+    GpioPin multi_bit8;
+
+    // Status LEDs
+    GpioPin mcu_err_led;
+    GpioPin mcu_stat_led;
+
+    // Single CAN Bus (FDCAN1)
     CanBus can1;
-    CanBus can2;
 
     int init();
-    uint16_t getADCValue(uint8_t channel);
 
   private:
-    VehicleState *vehicle;
-    const struct device *adc_dev_ = nullptr;
-    const struct device *gpioe_ = nullptr;
-    const struct device *gpioc_ = nullptr;
+    WheelState *wheel; // Replaced 'vehicle' pointer
+
+    // GPIO Port device pointers needed for Zephyr initialization
     const struct device *gpioa_ = nullptr;
+    const struct device *gpiob_ = nullptr;
+    const struct device *gpioc_ = nullptr;
+    const struct device *gpiod_ = nullptr;
+    const struct device *gpioe_ = nullptr;
+    
+    // CAN device pointer
     const struct device *can1_dev = nullptr;
-    const struct device *can2_dev = nullptr;
-    int initializeADCs();
+
+    // Internal initialization routines
     int initializeGPIOs();
-    int initializeCANs();
+    int initializeCAN();
 };

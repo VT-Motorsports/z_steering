@@ -1,4 +1,4 @@
-# # Copyright (c) 2025 VCU Team
+# # Copyright (c) 2025 Wheel Team
 # # SPDX-License-Identifier: Apache-2.0
 
 # # Flash and debug runner configuration
@@ -15,9 +15,9 @@
 
 # keep first
 board_runner_args(stm32cubeprogrammer "--port=swd" "--reset-mode=hw")
-board_runner_args(jlink "--device=STM32H753ZI" "--speed=4000")
+board_runner_args(jlink "--device=STM32H753VI" "--speed=4000")
 board_runner_args(openocd --target-handle=_CHIPNAME.cpu0)
-board_runner_args(pyocd "--target=stm32h753zitx")
+board_runner_args(pyocd "--target=stm32h753vitx")
 
 # keep first
 include(${ZEPHYR_BASE}/boards/common/stm32cubeprogrammer.board.cmake)
