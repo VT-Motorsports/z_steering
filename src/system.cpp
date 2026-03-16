@@ -91,6 +91,17 @@ void DiagnosticsTask::run()
             mem_stats.allocated_bytes + mem_stats.free_bytes,
             cpu_load / 10, cpu_load % 10);
 
+    // Toggle the MCU status LED every 3 seconds to act as a blinky
+    static uint64_t last_blink_time = 0;
+    if (uptime_ms - last_blink_time >= 3000)
+    {
+        if (hardware_)
+        {
+            hardware_->mcu_stat_led.toggle();
+        }
+        last_blink_time = uptime_ms;
+    }
+
     // Monitor FDCAN1 State
     if (hardware_ && hardware_->can1.is_initialized())
     {

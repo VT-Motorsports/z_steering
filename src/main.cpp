@@ -32,11 +32,10 @@ int main(void)
         return -2;
     }
 
-    /* * TODO: Start the Steering Input Task here.
+    /*Start the Steering Input Task here.
      * This will replace the old 'apps_task' and will poll the buttons,
-     * encoders, and BCD switch.
-     */
-    // start_steering_input_task(&wheel, &hardware);
+     * encoders, and BCD switch.*/
+    start_steering_input_task(&wheel, &hardware);
 
     // Start the system diagnostics task (Uptime, CPU Load, CAN stats)
     start_diagnostics_task(&system, &hardware, &wheel);

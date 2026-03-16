@@ -28,4 +28,10 @@ file(GLOB_RECURSE APP_SOURCES
 )
 
 # Add sources to app target
-target_sources(app PRIVATE ${APP_SOURCES})
+target_sources(app PRIVATE
+    src/main.cpp
+    src/hardware.cpp
+    src/can.cpp
+    src/system.cpp
+    src/steering_task.cpp 
+)

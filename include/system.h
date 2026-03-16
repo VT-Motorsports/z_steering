@@ -48,3 +48,5 @@ void start_diagnostics_task(System *sys, Hardware *hw, WheelState *w,
                              uint32_t period_ms = 1000, int priority = 10);
 
 DiagnosticsTask &get_diagnostics_task();
+
+void start_steering_input_task(WheelState *w, Hardware *hw);
