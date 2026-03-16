@@ -33,5 +33,6 @@ target_sources(app PRIVATE
     src/hardware.cpp
     src/can.cpp
     src/system.cpp
-    src/steering_task.cpp 
+    src/steering_task.cpp
+    src/gpio.cpp
 )
